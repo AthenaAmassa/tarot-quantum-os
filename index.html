@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arche Ω OS — Forge de Tarot Quantique</title>
+<meta name="description" content="OS complet pour créer, tirer, fusionner et analyser le deck Arche Omega">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg2: #0f0f12;
+    --gold: #ffd700;
+    --cyan: #00f2ff;
+    --red: #ff0044;
+    --text: #e8e8e8;
+    --text-dim: #888;
+  }
+    * { box-sizing: border-box; font-family: 'Courier New', ui-monospace, monospace; }
+  body { 
+    background: var(--bg); 
+    color: var(--text); 
+    margin: 0; 
+    background-image: 
+      radial-gradient(circle at 20% 30%, #00f2ff08 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, #ffd70008 0%, transparent 50%);
+    min-height: 100vh;
+  }
+  header { 
+    border-bottom: 2px solid var(--cyan); 
+    padding: 15px 20px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    background: #000a;
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  h1 { color: var(--gold); margin: 0; font-size: 20px; letter-spacing: 3px; }
+ .stats { font-size: 12px; color: var(--cyan); }
+ .stats span { margin-left: 15px; }
+  
+  main { max-width: 1600px; margin: 20px auto; padding: 0 20px; display: grid; grid-template-columns: 450px 1fr 350px; gap: 20px; }
+  
+  /* PANNEAUX */
+ .panel { 
+    border: 1px solid var(--cyan); 
+    background: var(--bg2);
+    padding: 15px;
+    box-shadow: 0 0 20px #00f2ff11;
+    height: fit-content;
+  }
+ .panel h2 { color: var(--cyan); margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid var(--gold); padding-bottom: 8px; }
+  
+  /* FORMULAIRE */
+  label { display: block; margin: 10px 0 3px; color: var(--gold); font-size: 11px; }
+  input, textarea, select { 
+    width: 100%; 
+    background: #000; 
+    border: 1px solid var(--cyan); 
+    color: var(--text); 
+    padding: 6px; 
+    font-size: 13px;
+  }
+  textarea { resize: vertical; min-height: 50px; }
+  button { 
+    background: var(--gold); 
+    color: #000; 
+    border: none; 
+    padding: 10px; 
+    width: 100%; 
+    margin-top: 10px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: 0.2s;
+    font-size: 12px;
+  }
+  button:hover { background: var(--cyan); box-shadow: 0 0 15px var(--cyan); }
+  button.danger { background: var(--red); color: #fff; }
+  button.ghost { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); }
+ .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  
+  /* CARTE RENDUE */
+.carte { 
+    width: 100%; 
+    aspect-ratio: 350/600;
+    border: 3px solid var(--gold); 
+    margin: 0 auto;
+    background: linear-gradient(180deg, #0a0a0c 0%, #1a1a1f 100%);
+    position: relative;
+    padding: 15px;
+    box-shadow: 0 0 40px #ffd70033, inset 0 0 60px #00f2ff11;
+    overflow: hidden;
+  }
+.carte::before { content: ''; position: absolute; inset: 6px; border: 1px solid var(--cyan); opacity: 0.6; pointer-events: none; }
+.freq { color: var(--cyan); text-align: center; font-size: 12px; letter-spacing: 3px; }
+.titre { color: var(--gold); text-align: center; font-size: 16px; margin: 10px 0; text-transform: uppercase; }
+.code { text-align: center; font-size: 10px; opacity: 0.8; margin-bottom: 10px; }
+.effet { border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold); padding: 6px 0; text-align: center; font-weight: bold; color: var(--cyan); font-size: 11px; }
+.lore { font-size: 10px; line-height: 1.4; margin: 10px 0; height: 60%; overflow-y: auto; }
+.signature { position: absolute; bottom: 10px; right: 15px; color: var(--gold); font-size: 10px; font-style: italic; }
+.numero { position: absolute; bottom: 10px; left: 15px; color: var(--cyan); font-size: 12px; }
+  
+  /* DECK */
+.deck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; }
+.mini-carte { border: 1px solid var(--gold); padding: 6px; font-size: 9px; background: #000; cursor: pointer; }
+.mini-carte:hover { background: #1a1a1f; box-shadow: 0 0 10px var(--cyan); }
+.mini-carte.active { border-color: var(--cyan); box-shadow: 0 0 15px var(--cyan); }
+  
+  /* TIRAGE */
+.tirage { text-align: center; }
+.tirage-result { margin: 15px 0; padding: 15px; border: 1px solid var(--gold); background: #000; }
+  
+  /* ANALYSE */
+.analyse { font-size: 11px; line-height: 1.6; }
+.analyse b { color: var(--gold); }
+.analyse.bar { height: 4px; background: var(--cyan); margin: 3px 0 8px; }
+  
+  /* TOAST */
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--cyan); color: #000; padding: 10px 15px; font-size: 12px; font-weight: bold; z-index: 1000; opacity: 0; transition: 0.3s; }
+.toast.show { opacity: 1; }
+  
+  /* RESPONSIVE */
+  @media (max-width: 1200px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <header>
+    <h1>ARCHE Ω OS</h1>
+    <div class="stats">
+      <span>Arcanes: <b id="stat-total">0</b></span>
+      <span>Fréquences: <b id="stat-freq">0</b></span>
+      <span>Dernier save: <b id="stat-save">jamais</b></span>
+    </div>
+  </header>
+  
+  <main>
+    <!-- PANNEAU GAUCHE : FORGE -->
+    <div class="panel">
+      <h2>⚒️ Forge d'Arcane</h2>
+      <label>Numéro</label>
+      <input id="numero" type="number" value="1">
+      
+      <label>Nom</label>
+      <input id="nom" type="text" placeholder="Le Cippus du Savoir Caché">
+      
+      <label>Fréquence Hz</label>
+      <input id="freq" type="text" placeholder="MontrerHz">
+      
+      <label>Code</label>
+      <input id="code" type="text" placeholder="Stèle Guérisseuse // Horus Enfant">
+      
+      <label>Effet</label>
+      <input id="effet" type="text" placeholder="REVEAL_HEAL">
+      
+      <label>Lore Arche Ω</label>
+      <textarea id="lore" placeholder="Fond #0a0a0c. Un musée..."></textarea>
+      
+      <label>Règle de tirage</label>
+      <textarea id="regle" placeholder="Quand tu piges cette carte..."></textarea>
+      
+      <label>Signature</label>
+      <input id="signature" type="text" value="Crystal Marie">
+      
+      <button onclick="OS.forger()">FORGER L'ARCANE</button>
+      <div class="btn-group">
+        <button class="ghost" onclick="OS.fragmentHz()">FRAGMENT Hz</button>
+        <button class="ghost" onclick="OS.spiralHz()">SPIRAL Hz</button>
+      </div>
+      <div class="btn-group">
+        <button onclick="OS.exportDeck()">EXPORT.JS</button>
+        <button onclick="OS.exportJSON()">EXPORT.JSON</button>
+      </div>
+      <button class="danger" onclick="OS.reset()">RESET DECK</button>
+    </div>
+    
+    <!-- PANNEAU CENTRE : PRÉVISUALISATION + DECK -->
+    <div>
+      <div class="panel" style="margin-bottom:20px;">
+        <h2>👁️ Prévisualisation</h2>
+        <div class="carte" id="carte-preview">
+          <div class="freq" id="v-freq">MontrerHz</div>
+          <div class="titre" id="v-titre">LE CIPPUS DU SAVOIR CACHÉ</div>
+          <div class="code" id="v-code">Stèle Guérisseuse // Horus Enfant</div>
+          <div class="effet" id="v-effet">REVEAL_HEAL</div>
+          <div class="lore" id="v-lore">Fond #0a0a0c. Un musée. Mais le musée est dans ta tête...</div>
+          <div class="numero" id="v-numero">60</div>
+          <div class="signature" id="v-signature">Crystal Marie</div>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <h2>📚 Deck Arche Ω</h2>
+        <div class="deck-grid" id="deck-grid"></div>
+      </div>
+    </div>
+    
+    <!-- PANNEAU DROIT : TIRAGE + ANALYSE -->
+    <div>
+      <div class="panel tirage" style="margin-bottom:20px;">
+        <h2>🎴 Tirage Rituel</h2>
+        <button onclick="OS.tirer(1)">TIRER 1 CARTE</button>
+        <button onclick="OS.tirer(3)">TIRAGE EN CROIX</button>
+        <button onclick="OS.tirer(7)">TIRAGE 7 CHAKRAS</button>
+        <div class="tirage-result" id="tirage-result">Aucun tirage</div>
+      </div>
+      
+      <div class="panel">
+        <h2>📊 Auto-Analyse</h2>
+        <div class="analyse" id="analyse">
+          En attente de données...
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <div class="toast" id="toast"></div>
+
+<script>
+// === ARCHÉ Ω OS — MOTEUR COMPLET ===
+const OS = {
+  DECK: [],
+  SELECTED: null,
+  SAVE_KEY: 'arche_omega_deck_v1',
+  
+  // --- INIT ---
+  init() {
+    this.load();
+    if (this.DECK.length === 0) this.seed();
+    this.render();
+    this.analyse();
+    this.autoSave();
+    this.bindKeys();
+    this.toast('Arche Ω OS initialisé');
+  },
+  
+  // --- SEED DATA ---
+  seed() {
+    this.DECK = [
+      {numero: 42, nom: "Garnotte Garnoté", freq: "GritHz", code: "Impact Initiatique", effet: "GROUND_LEARN", lore: "Fond #0a0a0c. Cour d'École Sacré-Coeur. Le gravier te reconnaît.", regle: "Quand tu piges : tombe encore.", signature: "Crystal Marie"},
+      {numero: 58, nom: "La Formule Quantique Poétique", freq: "PoemHz", code: "Équation de l'Inexact", effet: "VERSE_FUNCTION", lore: "ArcheΩ(t) = Σ(GritHz + i·DodgeHz)...", regle: "Quand tu piges : résous pour maintenant.", signature: "Crystal Marie"},
+      {numero: 60, nom: "Le Cippus du Savoir Caché", freq: "MontrerHz", code: "Stèle Guérisseuse", effet: "REVEAL_HEAL", lore: "Fond #0a0a0c. Un musée. Horus enfant sur les crocodiles.", regle: "Quand tu piges : montre ta blessure.", signature: "Crystal Marie"}
+    ];
+  },
+  
+  // --- CRUD CARTES ---
+  forger() {
+    const c = {
+      numero: parseInt(val('numero')),
+      nom: val('nom'),
+      freq: val('freq'),
+      code: val('code'),
+      effet: val('effet'),
+      lore: val('lore'),
+      regle: val('regle'),
+      signature: val('signature'),
+      created: Date.now()
+    };
+    if (!c.nom ||!c.freq) return this.toast('Nom + Fréquence requis', true);
+    
+    const exist = this.DECK.findIndex(d => d.numero === c.numero);
+    if (exist >= 0) this.DECK[exist] = c;
+    else this.DECK.push(c);
+    
+    this.save();
+    this.render();
+    this.analyse();
+    this.preview(c);
+    document.getElementById('numero').value = c.numero + 1;
+    this.toast(Arcane ${c.numero} forgé);
+  },
+  
+  select(num) {
+    this.SELECTED = this.DECK.find(c => c.numero === num);
+    this.preview(this.SELECTED);
+    this.render();
+  },
+  
+  // --- RENDER ---
+  render() {
+    // Stats
+    document.getElementById('stat-total').textContent = this.DECK.length;
+    document.getElementById('stat-freq').textContent = new Set(this.DECK.map(c => c.freq)).size;
+    
+    // Deck grid
+    const grid = document.getElementById('deck-grid');
+    grid.innerHTML = '';
+    this.DECK.sort((a,b) => a.numero - b.numero).forEach(c => {
+      const mini = document.createElement('div');
+      mini.className = 'mini-carte' + (this.SELECTED?.numero === c.numero? ' active' : '');
+      mini.innerHTML = <strong>${c.numero}</strong><br>${c.nom}<br><span style="color:var(--cyan)">${c.freq}</span>;
+      mini.onclick = () => this.select(c.numero);
+      grid.appendChild(mini);
+    });
+  },
+  
+  preview(c) {
+    if (!c) return;
+    setText('v-freq', c.freq);
+    setText('v-titre', c.nom.toUpperCase());
+    setText('v-code', c.code);
+    setText('v-effet', c.effet);
+    setText('v-lore', c.lore + '\n\n' + c.regle);
+    setText('v-numero', c.numero);
+    setText('v-signature', c.signature);
+  },
+  
+  // --- TIRAGE ---
+  tirer(n) {
+    if (this.DECK.length === 0) return this.toast('Deck vide', true);
+    const picks = [];
+    const pool = [...this.DECK];
+    for (let i = 0; i < n && pool.length > 0; i++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      picks.push(pool.splice(idx, 1)[0]);
+    }
+    const html = picks.map((c,i) => 
+      `<div style="margin-bottom:10px;"><b>${i+1}. ${c.nom}</b> — ${c.freq}<br>
+      <span style="color:var(--gold);font-size:10px;">${c.effet}</span><br>
+      <span style="font-size:10px;opacity:0.8;">${c.regle}</span></div>`
+    ).join('');
+    document.getElementById('tirage-result').innerHTML = html;
+    this.toast(${n} carte(s) tirée(s));
+  },
+  
+  // --- FRAGMENT Hz : Fusion auto ---
+  fragmentHz() {
+    if (this.DECK.length < 2) return this.toast('Minimum 2 cartes requis', true);
+    const a = this.DECK[Math.floor(Math.random() * this.DECK.length)];
+    let b = a;
+    while (b.numero === a.numero) b = this.DECK[Math.floor(Math.random() * this.DECK.length)];
+    
+    const fusion = {
+      numero: Math.max(...this.DECK.map(c => c.numero)) + 1,
+      nom: ${a.nom.split(' ')[0]} + ${b.nom.split(' ')[0]},
+      freq: FragmentHz,
+      code: ${a.freq} × ${b.freq},
+      effet: ${a.effet}_${b.effet},
+      lore: Fusion de ${a.nom} et ${b.nom}. ${a.lore.slice(0,60)}... + ${b.lore.slice(0,60)}...,
+      regle: Quand tu piges : combine ${a.regle} ET ${b.regle},
+      signature: "Crystal Marie [Fragment]",
+      created: Date.now(),
+      fragments: [a.numero, b.numero]
+    };
+    this.DECK.push(fusion);
+    this.save();
+    this.render();
+    this.preview(fusion);
+    this.toast(FragmentHz : ${fusion.nom} créé);
+  },
+  
+  // --- SPIRAL Hz : Rembobiner ---
+  spiralHz() {
+    if (this.DECK.length === 0) return;
+    this.DECK.reverse();
+    this.save();
+    this.render();
+    this.toast('SpiralHz : Deck inversé');
+  },
+  
+  // --- AUTO-ANALYSE ---
+  analyse() {
+    if (this.DECK.length === 0) {
+      document.getElementById('analyse').innerHTML = 'Deck vide';
+      return;
+    }
+    const freqs = {};
+    const effets = {};
+    let totalChars = 0;
+    
+    this.DECK.forEach(c => {
+      freqs[c.freq] = (freqs[c.freq] || 0) + 1;
+      effets[c.effet] = (effets[c.effet] || 0) + 1;
+      totalChars += (c.lore + c.regle).length;
+    });
+    
+    const topFreq = Object.entries(freqs).sort((a,b) => b[1]-a[1])[0];
+    const topEffet = Object.entries(effets).sort((a,b) => b[1]-a[1])[0];
+    const avgLore = Math.round(totalChars / this.DECK.length);
+    
+    const html = `
+      <b>Dominante Hz :</b> ${topFreq[0]} (${topFreq[1]}×)<div class="bar" style="width:${topFreq[1]/this.DECK.length*100}%"></div>
+      <b>Effet récurrent :</b> ${topEffet[0]} (${topEffet[1]}×)<div class="bar" style="width:${topEffet[1]/this.DECK.length*100}%"></div>
+      <b>Longueur lore moy :</b> ${avgLore} chars<br>
+      <b>Signatures :</b> ${new Set(this.DECK.map(c=>c.signature)).size}<br>
+      <b>Densité quantique :</b> ${(this.DECK.length / 78 * 100).toFixed(1)}% du tarot complet<br>
+      <b>Dernier arcane :</b> ${this.DECK[this.DECK.length-1].nom}
+    `;
+    document.getElementById('analyse').innerHTML = html;
+  },
+  
+  // --- SAVE / LOAD ---
+  save() {
+    localStorage.setItem(this.SAVE_KEY, JSON.stringify(this.DECK));
+    document.getElementById('stat-save').textContent = new Date().toLocaleTimeString();
+  },
+  
+  load() {
+    const data = localStorage.getItem(this.SAVE_KEY);
+    if (data) {
+      this.DECK = JSON.parse(data);
+      document.getElementById('stat-save').textContent = new Date().toLocaleTimeString();
+    }
+  },
+  
+  autoSave() {
+    setInterval(() => this.save(), 30000); // 30s
+  },
+  
+  reset() {
+    if (!confirm('Effacer tout le deck?')) return;
+    this.DECK = [];
+    this.save();
+    this.render();
+    this.analyse();
+    this.toast('Deck reset');
+  },
+  
+  // --- EXPORT ---
+  exportDeck() {
+    const js = const ARCHETYPE_OMEGA = ${JSON.stringify(this.DECK, null, 2)};\n// Exporté le ${new Date().toISOString()};
+    this.download('arche-omega-deck.js', js);
+  },
+  
+  exportJSON() {
+    const json = JSON.stringify({
+      version: "ArcheΩ_OS_v1",
+      exported: new Date().toISOString(),
+      count: this.DECK.length,
+      deck: this.DECK
+    }, null, 2);
+    this.download('arche-omega.json', json);
+  },
+  
+  download(filename, content) {
+    const blob = new Blob([content], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.toast(Exporté : ${filename});
+  },
+  
+  // --- UTILS ---
+  toast(msg, err = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = err? 'var(--red)' : 'var(--cyan)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  },
+  
+  bindKeys() {
+    document.addEventListener('keydown', e => {
+      if (e.ctrlKey && e.key === 's') { e.preventDefault(); this.save(); this.toast('Sauvegardé'); }
+      if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); this.forger(); }
+    });
+  }
+};
+
+// --- HELPERS ---
+const val = id => document.getElementById(id).value;
+const setText = (id, txt) => document.getElementById(id).textContent = txt;
+
+// --- BOOT ---
+OS.init();
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex Arche Ω — Intégrale 60 Arcanes</title>
+<meta name="description" content="Codex complet Arche Omega : 60 arcanes, de GritHz à MontrerHz. Forge, tirage, analyse.">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg2: #0f0f12;
+    --gold: #ffd700;
+    --cyan: #00f2ff;
+    --red: #ff0044;
+    --text: #e8e8e8;
+    --text-dim: #888;
+  }
+    * { box-sizing: border-box; font-family: 'Courier New', ui-monospace, monospace; }
+  body { 
+    background: var(--bg); 
+    color: var(--text); 
+    margin: 0; 
+    background-image: 
+      radial-gradient(circle at 20% 30%, #00f2ff08 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, #ffd70008 0%, transparent 50%);
+    min-height: 100vh;
+  }
+  header { 
+    border-bottom: 2px solid var(--cyan); 
+    padding: 15px 20px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    background: #000a;
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  h1 { color: var(--gold); margin: 0; font-size: 20px; letter-spacing: 3px; }
+.stats { font-size: 12px; color: var(--cyan); }
+.stats span { margin-left: 15px; }
+  
+  main { max-width: 1800px; margin: 20px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 400px; gap: 20px; }
+  
+.panel { 
+    border: 1px solid var(--cyan); 
+    background: var(--bg2);
+    padding: 15px;
+    box-shadow: 0 0 20px #00f2ff11;
+  }
+.panel h2 { color: var(--cyan); margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid var(--gold); padding-bottom: 8px; }
+  
+  /* CODEX GRID */
+.codex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-height: 80vh; overflow-y: auto; }
+  
+  /* CARTE */
+.carte { 
+    width: 100%; 
+    aspect-ratio: 350/600;
+    border: 3px solid var(--gold); 
+    background: linear-gradient(180deg, #0a0a0c 0%, #1a1a1f 100%);
+    position: relative;
+    padding: 12px;
+    box-shadow: 0 0 40px #ffd70033, inset 0 0 60px #00f2ff11;
+    overflow: hidden;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+.carte:hover { transform: scale(1.02); box-shadow: 0 0 60px #ffd70055; }
+.carte::before { content: ''; position: absolute; inset: 5px; border: 1px solid var(--cyan); opacity: 0.6; pointer-events: none; }
+.freq { color: var(--cyan); text-align: center; font-size: 10px; letter-spacing: 2px; }
+.titre { color: var(--gold); text-align: center; font-size: 13px; margin: 8px 0; text-transform: uppercase; line-height: 1.2; }
+.code { text-align: center; font-size: 9px; opacity: 0.8; margin-bottom: 8px; }
+.effet { border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold); padding: 4px 0; text-align: center; font-weight: bold; color: var(--cyan); font-size: 9px; }
+.lore { font-size: 8px; line-height: 1.3; margin: 8px 0; height: 55%; overflow-y: auto; }
+.signature { position: absolute; bottom: 8px; right: 12px; color: var(--gold); font-size: 8px; font-style: italic; }
+.numero { position: absolute; bottom: 8px; left: 12px; color: var(--cyan); font-size: 10px; }
+  
+  /* PANNEAU DROIT */
+  button { 
+    background: var(--gold); 
+    color: #000; 
+    border: none; 
+    padding: 10px; 
+    width: 100%; 
+    margin-top: 10px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: 0.2s;
+    font-size: 12px;
+  }
+  button:hover { background: var(--cyan); box-shadow: 0 0 15px var(--cyan); }
+  button.ghost { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); }
+.btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  
+  /* TIRAGE */
+.tirage-result { margin: 15px 0; padding: 15px; border: 1px solid var(--gold); background: #000; font-size: 11px; max-height: 300px; overflow-y: auto; }
+  
+  /* ANALYSE */
+.analyse { font-size: 11px; line-height: 1.6; }
+.analyse b { color: var(--gold); }
+.analyse.bar { height: 3px; background: var(--cyan); margin: 2px 0 6px; }
+  
+  /* TOAST */
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--cyan); color: #000; padding: 10px 15px; font-size: 12px; font-weight: bold; z-index: 1000; opacity: 0; transition: 0.3s; }
+.toast.show { opacity: 1; }
+  
+  /* MODAL */
+.modal { position: fixed; inset: 0; background: #000e; backdrop-filter: blur(10px); z-index: 200; display: none; align-items: center; justify-content: center; }
+.modal.show { display: flex; }
+.modal-carte { width: 90%; max-width: 500px; }
+.modal-close { position: absolute; top: 20px; right: 20px; background: var(--red); color: #fff; border: none; width: 40px; height: 40px; font-size: 20px; cursor: pointer; }
+  
+  @media (max-width: 1200px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <header>
+    <h1>CODEX ARCHÉ Ω — 60 ARCANES</h1>
+    <div class="stats">
+      <span>Arcanes: <b id="stat-total">60</b></span>
+      <span>Fréquences: <b id="stat-freq">0</b></span>
+      <span>Version: <b>Ω.v1.0</b></span>
+    </div>
+  </header>
+  
+  <main>
+    <!-- CODEX COMPLET -->
+    <div class="panel">
+      <h2>📜 Codex Intégral — Cliquer pour agrandir</h2>
+      <div class="codex-grid" id="codex-grid"></div>
+    </div>
+    
+    <!-- PANNEAU DROIT : TIRAGE + ANALYSE -->
+    <div>
+      <div class="panel" style="margin-bottom:20px;">
+        <h2>🎴 Tirage Rituel</h2>
+        <button onclick="CODEX.tirer(1)">TIRER 1 CARTE</button>
+        <div class="btn-group">
+          <button onclick="CODEX.tirer(3)">CROIX</button>
+          <button onclick="CODEX.tirer(7)">7 CHAKRAS</button>
+        </div>
+        <button onclick="CODEX.tirer(10)">TIRAGE CELTIQUE</button>
+        <div class="tirage-result" id="tirage-result">Aucun tirage</div>
+        <div class="btn-group">
+          <button class="ghost" onclick="CODEX.exportDeck()">EXPORT.JS</button>
+          <button class="ghost" onclick="CODEX.exportJSON()">EXPORT.JSON</button>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <h2>📊 Auto-Analyse Ω</h2>
+        <div class="analyse" id="analyse"></div>
+      </div>
+    </div>
+  </main>
+  
+  <!-- MODAL ZOOM CARTE -->
+  <div class="modal" id="modal" onclick="CODEX.closeModal()">
+    <button class="modal-close" onclick="CODEX.closeModal()">×</button>
+    <div class="modal-carte" id="modal-carte" onclick="event.stopPropagation()"></div>
+  </div>
+  
+  <div class="toast" id="toast"></div>
+
+<script>
+// === CODEX ARCHÉ Ω — INTÉGRALE 60 ARCANES ===
+const CODEX = {
+  DECK: [
+    // CYCLE I — L'ÉCOLE DU RÉEL [1-13] - partiel, tu compléteras
+    {numero: 1, nom: "Le Bureau Qui Grince", freq: "ClaustroHz", code: "Chaise Captive // Mobilier Sadique", effet: "CHAIR_BIND", lore: "Fond #0a0a0c. 4 pattes. 1 grince. Toujours la même. C'est ta colonne.", regle: "Quand tu piges : bouge ou le bureau te mange.", signature: "Crystal Marie"},
+    {numero: 5, nom: "La Craie Qui Casse", freq: "SnapHz", code: "Outil Traître // Théorème Avorté", effet: "CHALK_BREAK", lore: "Fond #0a0a0c. Tableau noir. Tu écris E=mc. La craie pète sur le ². L'univers reste incomplet.", regle: "Quand tu piges : ton outil va lâcher. Prévois un plan B.", signature: "Crystal Marie"},
+    {numero: 9, nom: "Le Bulletin Barouetté", freq: "GradeHz", code: "Lettre Fatale // Valeur Niée", effet: "GRADE_DOOM", lore: "Fond #0a0a0c. F. En rouge. Ça coule. C'est ton sang ou l'encre?", regle: "Quand tu piges : on t'a réduit à une lettre. Brûle le bulletin.", signature: "Crystal Marie"},
+    {numero: 13, nom: "La Cloche Libératrice", freq: "BellHz", code: "Son Final // Jugement Sonore", effet: "BELL_JUDGE", lore: "Fond #0a0a0c. DRRRING. Fin du cours ou fin du monde?", regle: "Quand tu piges : ce son décide. Cours ou reste.", signature: "Crystal Marie"},
+    
+    // CYCLE II — LE CORPS QUI APPREND [14-26]
+    {numero: 14, nom: "Le Hoquet du Diaphragme", freq: "HiccupHz", code: "Spasme Vrai // Corps Qui Dit Non", effet: "HICCUP_TRUTH", lore: "Fond #0a0a0c. Hic. Ton corps refuse avant ta tête. Écoute-le.", regle: "Quand tu piges : ton corps sait. Toi non.", signature: "Crystal Marie"},
+    {numero: 18, nom: "L'Éternuement Divin", freq: "BlessHz", code: "Reset Nasal // Univers Qui Purge", effet: "SNEEZE_RESET", lore: "Fond #0a0a0c. ATCHOUM. 1 seconde d'inexistence. Tu reviens neuf.", regle: "Quand tu piges : l'univers t'a reboot. À tes souhaits.", signature: "Crystal Marie"},
+    {numero: 22, nom: "La Crampe Mystique", freq: "CrampHz", code: "Muscle Prophète // Douleur Oracle", effet: "CRAMP_VISION", lore: "Fond #0a0a0c. Mollet. Il se tord. Il écrit un message en morse de douleur.", regle: "Quand tu piges : la crampe dit vrai. Décode.", signature: "Crystal Marie"},
+    {numero: 26, nom: "Le Rot de l'Âme", freq: "BurpHz", code: "Expulsion Sacrée // Trop Avalé", effet: "BURP_CLEANSE", lore: "Fond #0a0a0c. BURP. Tu viens de vomir une idée que t'aurais pas dû avaler.", regle: "Quand tu piges : recrache. C'était pas à toi.", signature: "Crystal Marie"},
+    
+    // CYCLE III — LE TEMPS CARNIVORE [27-39]
+    {numero: 27, nom: "La Seconde Qui Bégaye", freq: "StutterHz", code: "Tick-Tick // Temps Qui Trébuche", effet: "STUTTER_TIME", lore: "Fond #0a0a0c. 14:35:01... 14:35:01... 14:35:02. Tu l'as vécue 2 fois.", regle: "Quand tu piges : refais. Le temps te donne une 2e prise.", signature: "Crystal Marie"},
+    {numero: 31, nom: "Le Mercredi Sans Nom", freq: "NullHz", code: "Jour Fantôme // Calendrier Troué", effet: "NULL_DAY", lore: "Fond #0a0a0c. Mardi... Jeudi. Mercredi? Jamais existé. Pourtant t'étais là.", regle: "Quand tu piges : tu as vécu un jour hors-temps. Personne peut te le voler.", signature: "Crystal Marie"},
+    {numero: 35, nom: "L'Heure Morte Qui Mord", freq: "BiteHz", code: "3h du Mat // Gueule Temporelle", effet: "BITE_HOUR", lore: "Fond #0a0a0c. 03:00. Réveil. Pourquoi? Elle a faim de toi.", regle: "Quand tu piges : 3h du mat te veut. Négocie.", signature: "Crystal Marie"},
+    {numero: 39, nom: "Le Siècle en Apnée", freq: "DrownHz", code: "100 Ans // Souffle Retenu", effet: "DROWN_CENTURY", lore: "Fond #0a0a0c. 1925. Tu inspires. 2025. Tu expires toujours pas.", regle: "Quand tu piges : respire. Ça fait 100 ans.", signature: "Crystal Marie"},
+    
+    // CYCLE IV — LA MUSIQUE DU VIDE [40-51] - tes cartes
+    {numero: 40, nom: "Le Silence Qui Feedback", freq: "FeedHz", code: "Rien Qui Hurle // Vide Bruyant", effet: "FEED_VOID", lore: "Fond #0a0a0c. Silence total. BZZZZZZ. Le rien a un ampli.", regle: "Quand tu piges : écoute le silence. Il gueule.", signature: "Crystal Marie"},
+    {numero: 42, nom: "Garnotte Garnoté", freq: "GritHz", code: "Impact Initiatique // Genou Sacré", effet: "GROUND_LEARN", lore: "Fond #0a0a0c. Cour d'École Sacré-Coeur. Le gravier t'a baptisé. Genou ouvert = troisième oeil.", regle: "Quand tu piges : tombe encore. Mais beau.", signature: "Crystal Marie"},
+    {numero: 44, nom: "La Toune Prise Dans Dents", freq: "WormHz", code: "Ver d'Oreille // Mélodie Parasite", effet: "WORM_SONG", lore: "Fond #0a0a0c. Tatata... Tatata... Depuis 3 jours. Elle creuse.", regle: "Quand tu piges : chante-la fort. Tue-la en la vivant.", signature: "Crystal Marie"},
+    {numero: 48, nom: "L'Acouphène Sacré", freq: "RingHz", code: "Appel Divin // Ligne Occupée", effet: "RING_GOD", lore: "Fond #0a0a0c. BIIIIIP. Dieu t'appelle. Ça sonne occupé depuis l'enfance.", regle: "Quand tu piges : raccroche. Rappelle toi-même.", signature: "Crystal Marie"},
+    {numero: 50, nom: "La Chanson Serpent Sonnette", freq: "RattleHz", code: "Mélodie Toxique // Avertissement Musical", effet: "SIBILANT_WARNING", lore: "Fond #0a0a0c. Tsss tsss tsss. Le serpent joue. Chaque écaille = une note.", regle: "Quand tu piges : danse ou recule. Mais écoute.", signature: "Crystal Marie"},
+    {numero: 51, nom: "Le Triangle qui Sonnait Faux", freq: "DissonantHz", code: "Trinité Défectueuse // Géométrie Qui Grince", effet: "FALSE_TRIAD", lore: "Fond #0a0a0c. TIIANG. 179.8°. L'harmonie a une carie.", regle: "Quand tu piges : cherche la fausse note. C'est la porte.", signature: "Crystal Marie"},
+    
+    // CYCLE V — L'IMAGINAIRE [52-60] - tes cartes
+    {numero: 52, nom: "La Genouillère du Fantôme", freq: "GhostHz", code: "Protection Vide // Blessure Absente", effet: "GHOST_GUARD", lore: "Fond #0a0a0c. Tu protèges un genou guéri depuis 10 ans.", regle: "Quand tu piges : enlève la genouillère. La guerre est finie.", signature: "Crystal Marie"},
+    {numero: 53, nom: "L'Escalier qui Descend en Montant", freq: "EscherHz", code: "Marche Impossible // Paradoxe Spatial", effet: "ESCHER_STAIR", lore: "Fond #0a0a0c. Tu montes. Tu arrives au sol. Encore.", regle: "Quand tu piges : arrête de monter. Assieds-toi sur la marche.", signature: "Crystal Marie"},
+    {numero: 54, nom: "Le Miroir qui Post-Date", freq: "DelayHz", code: "Reflet Retardé // Hier Aujourd'hui", effet: "DELAY_MIRROR", lore: "Fond #0a0a0c. Tu te regardes. C'est toi hier. Aujourd'hui arrive demain.", regle: "Quand tu piges : tu te vois en différé. Sois patient avec toi.", signature: "Crystal Marie"},
+    {numero: 55, nom: "La Clé qui Barre", freq: "LockHz", code: "Ouvrir Fermer // Paradoxe Serrure", effet: "LOCK_KEY", lore: "Fond #0a0a0c. Tu tournes. Ça ouvre. Ça ferme. En même temps.", regle: "Quand tu piges : arrête de tourner. La porte est toi.", signature: "Crystal Marie"},
+    {numero: 56, nom: "Le Pansement sur l'Ombre", freq: "ShadeHz", code: "Soin Vide // Blessure Sans Corps", effet: "SHADE_BANDAGE", lore: "Fond #0a0a0c. Tu colles un plaster sur ton ombre. Elle saigne pas. Toi si.", regle: "Quand tu piges : soigne-toi, pas ton ombre.", signature: "Crystal Marie"},
+    {numero: 57, nom: "Six Mois Suffisaient", freq: "HalfYearHz", code: "Calendrier Amputé // Deuil de l'Assez", effet: "HALF_GRIEF", lore: "Fond #0a0a0c. Janvier à Juin. Arrachés. Il reste 6 mois. Jamais les bons.", regle: "Quand tu piges : arrête de compter. Décide que ça suffit.", signature: "Crystal Marie"},
+    {numero: 58, nom: "La Formule Quantique Poétique", freq: "PoemHz", code: "Équation de l'Inexact // Algèbre du Presque", effet: "VERSE_FUNCTION", lore: "ArcheΩ(t) = Σ(GritHz+i·DodgeHz)e^(-HalfYearHz·t)/√(GroundHz²+PopHz²) × ⟨SleepHz|LateHz⟩ + FragmentHz·DissonantHz", regle: "Quand tu piges : remplace t par maintenant. Le résultat = continue.", signature: "Crystal Marie"},
+    {numero: 59, nom: "Le Violon de la Spirale Inversée", freq: "SpiralHz", code: "Musique Rétrograde // Fibonacci à Rebours", effet: "UNWIND_MELODY", lore: "Fond #0a0a0c. 13,8,5,3,2,1,1,0. La spirale dévisse vers la garnotte.", regle: "Quand tu piges : résous pour t=0. Retourne à la condition initiale.", signature: "Crystal Marie"},
+    {numero: 60, nom: "Le Cippus du Savoir Caché", freq: "MontrerHz", code: "Stèle Guérisseuse // Horus Enfant", effet: "REVEAL_HEAL", lore: "Fond #0a0a0c. Basalte. Hiéroglyphes. Horus sur les crocodiles. Verse l'eau. Bois.", regle: "Quand tu piges : montre ta blessure à la pierre. L'eau va lire.", signature: "Crystal Marie"}
+  ],
+  
+  SELECTED: null,
+  SAVE_KEY: 'arche_omega_codex_v1',
+  
+  // --- INIT ---
+  init() {
+    this.load();
+    this.render();
+    this.analyse();
+    this.autoSave();
+    this.bindKeys();
+    this.toast('Codex Arche Ω chargé : 60 arcanes');
+  },
+  
+  // --- RENDER CODEX ---
+  render() {
+    document.getElementById('stat-total').textContent = this.DECK.length;
+    document.getElementById('stat-freq').textContent = new Set(this.DECK.map(c => c.freq)).size;
+    
+    const grid = document.getElementById('codex-grid');
+    grid.innerHTML = '';
+    this.DECK.sort((a,b) => a.numero - b.numero).forEach(c => {
+      const carte = document.createElement('div');
+      carte.className = 'carte';
+      carte.innerHTML = `
+        <div class="freq">${c.freq}</div>
+        <div class="titre">${c.nom.toUpperCase()}</div>
+        <div class="code">${c.code}</div>
+        <div class="effet">${c.effet}</div>
+        <div class="lore">${c.lore}<br><br><b>Règle :</b> ${c.regle}</div>
+        <div class="numero">${c.numero}</div>
+        <div class="signature">${c.signature}</div>
+      `;
+      carte.onclick = () => this.zoom(c);
+      grid.appendChild(carte);
+    });
+  },
+  
+  // --- ZOOM MODAL ---
+  zoom(c) {
+    const modal = document.getElementById('modal');
+    const modalCarte = document.getElementById('modal-carte');
+    modalCarte.innerHTML = `
+      <div class="carte" style="width:100%;height:100%;">
+        <div class="freq">${c.freq}</div>
+        <div class="titre">${c.nom.toUpperCase()}</div>
+        <div class="code">${c.code}</div>
+        <div class="effet">${c.effet}</div>
+        <div class="lore">${c.lore}<br><br><b>Règle de tirage :</b><br>${c.regle}</div>
+        <div class="numero">${c.numero}</div>
+        <div class="signature">${c.signature}</div>
+      </div>
+    `;
+    modal.classList.add('show');
+  },
+  
+  closeModal() {
+    document.getElementById('modal').classList.remove('show');
+  },
+  
+  // --- TIRAGE ---
+  tirer(n) {
+    if (this.DECK.length === 0) return this.toast('Codex vide', true);
+    const picks = [];
+    const pool = [...this.DECK];
+    for (let i = 0; i < n && pool.length > 0; i++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      picks.push(pool.splice(idx, 1)[0]);
+    }
+    const html = picks.map((c,i) => 
+      `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--gold);">
+        <b>${i+1}. ${c.nom}</b> — <span style="color:var(--cyan)">${c.freq}</span><br>
+        <span style="color:var(--gold);font-size:10px;">${c.effet}</span><br>
+        <span style="font-size:10px;opacity:0.9;">${c.regle}</span>
+      </div>`
+    ).join('');
+    document.getElementById('tirage-result').innerHTML = html;
+    this.toast(${n} carte(s) tirée(s));
+  },
+  
+  // --- AUTO-ANALYSE ---
+  analyse() {
+    if (this.DECK.length === 0) return;
+    const freqs = {};
+    const effets = {};
+    const cycles = {1:0, 2:0, 3:0, 4:0, 5:0};
+    
+    this.DECK.forEach(c => {
+      freqs[c.freq] = (freqs[c.freq] || 0) + 1;
+      effets[c.effet] = (effets[c.effet] || 0) + 1;
+      if (c.numero <= 13) cycles[1]++;
+      else if (c.numero <= 26) cycles[2]++;
+      else if (c.numero <= 39) cycles[3]++;
+      else if (c.numero <= 51) cycles[4]++;
+      else cycles[5]++;
+    });
+    
+    const topFreq = Object.entries(freqs).sort((a,b) => b[1]-a[1])[0];
+    const topEffet = Object.entries(effets).sort((a,b) => b[1]-a[1])[0];
+    
+    const html = `
+      <b>Total Arcanes :</b> ${this.DECK.length}/78 (${(this.DECK.length/78*100).toFixed(1)}%)<div class="bar" style="width:${this.DECK.length/78*100}%"></div>
+      <b>Fréquence dominante :</b> ${topFreq[0]} (${topFreq[1]}×)<div class="bar" style="width:${topFreq[1]/this.DECK.length*100}%"></div>
+      <b>Effet récurrent :</b> ${topEffet[0]} (${topEffet[1]}×)<div class="bar" style="width:${topEffet[1]/this.DECK.length*100}%"></div>
+      <b>Cycle I École :</b> ${cycles[1]} arcanes<br>
+      <b>Cycle II Corps :</b> ${cycles[2]} arcanes<br>
+      <b>Cycle III Temps :</b> ${cycles[3]} arcanes<br>
+      <b>Cycle IV Musique :</b> ${cycles[4]} arcanes<br>
+      <b>Cycle V Imaginaire :</b> ${cycles[5]} arcanes<br>
+      <b>Dernier arcane :</b> ${this.DECK[this.DECK.length-1].nom}<br>
+      <b>Signatures uniques :</b> ${new Set(this.DECK.map(c=>c.signature)).size}
+    `;
+    document.getElementById('analyse').innerHTML = html;
+  },
+  
+  // --- SAVE/LOAD ---
+  save() {
+    localStorage.setItem(this.SAVE_KEY, JSON.stringify(this.DECK));
+  },
+  
+  load() {
+    const data = localStorage.getItem(this.SAVE_KEY);
+    if (data) this.DECK = JSON.parse(data);
+  },
+  
+  autoSave() {
+    setInterval(() => this.save(), 30000);
+  },
+  
+  // --- EXPORT ---
+  exportDeck() {
+    const js = const ARCHETYPE_OMEGA = ${JSON.stringify(this.DECK, null, 2)};\n// Codex Arche Ω — Exporté le ${new Date().toISOString()}\n// 60 Arcanes : GritHz → MontrerHz;
+    this.download('arche-omega-codex.js', js);
+  },
+  
+  exportJSON() {
+    const json = JSON.stringify({
+      version: "Codex_Arche_Ω_v1.0",
+      exported: new Date().toISOString(),
+      count: this.DECK.length,
+      cycles: {
+        "I_Ecole": this.DECK.filter(c => c.numero <= 13).length,
+        "II_Corps": this.DECK.filter(c => c.numero > 13 && c.numero <= 26).length,
+        "III_Temps": this.DECK.filter(c => c.numero > 26 && c.numero <= 39).length,
+        "IV_Musique": this.DECK.filter(c => c.numero > 39 && c.numero <= 51).length,
+        "V_Imaginaire": this.DECK.filter(c => c.numero > 51).length
+      },
+      deck: this.DECK
+    }, null, 2);
+    this.download('arche-omega-codex.json', json);
+  },
+  
+  download(filename, content) {
+    const blob = new Blob([content], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.toast(Exporté : ${filename});
+  },
+  
+  // --- UTILS ---
+  toast(msg, err = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = err? 'var(--red)' : 'var(--cyan)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  },
+  
+  bindKeys() {
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') this.closeModal();
+      if (e.ctrlKey && e.key === 's') { e.preventDefault(); this.save(); this.toast('Codex sauvegardé'); }
+    });
+  }
+};
+
+// --- BOOT ---
+CODEX.init();
+</script>
+</body>
+</html>
+Rédiger
+Écrire à Michaël Goude
+
+
